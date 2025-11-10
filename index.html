@@ -1,479 +1,485 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
+
 <head>
+    <meta charset="UTF-8">
     <title>AutoChimeSystem</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<h1>AutoChimeSystem</h1>
+    <h1>AutoChimeSystem</h1>
 
-<div>
-    <label>再生するYouTubeのURL：<input type="text" id="youtubeUrl" data-id="youtube-url" data-label="再生するYouTubeのURL"></label><br>
-    <label>休憩時間 開始時間　：<input type="time" id="time1" data-id="resttime" data-label="休憩時間 開始時間"></label><br>
-    <label>休憩時間 終了時間　：<input type="time" id="time2" data-id="resttime-end" data-label="休憩時間 終了時間"></label><br>
-    <label>蛍の光 開始時間　　：<input type="time" id="time3" data-id="fireflylight" data-label="蛍の光 開始時間"></label><br>
-    <label>蛍の光 再生終了時間：<input type="time" id="time4" data-id="fireflylight-end" data-label="蛍の光 再生終了時間"></label><br>
-</div>
+    <div>
+        <label>再生するYouTubeのURL：<input type="text" id="youtubeUrl" data-id="youtube-url"
+                data-label="再生するYouTubeのURL"></label><br>
+        <label>休憩時間 開始時間　：<input type="time" id="time1" data-id="resttime" data-label="休憩時間 開始時間"></label><br>
+        <label>休憩時間 終了時間　：<input type="time" id="time2" data-id="resttime-end" data-label="休憩時間 終了時間"></label><br>
+        <label>蛍の光 開始時間　　：<input type="time" id="time3" data-id="fireflylight" data-label="蛍の光 開始時間"></label><br>
+        <label>蛍の光 再生終了時間：<input type="time" id="time4" data-id="fireflylight-end" data-label="蛍の光 再生終了時間"></label><br>
+    </div>
 
-<div id="status">ステータス: 停止中</div>
+    <div id="status">ステータス: 停止中</div>
 
-<div class="buttons">
-    <button id="startButton">開始</button>
-    <button id="stopButton">停止</button>
-    <button id="presetNormalButton">通常プリセット</button>
-    <button id="presetAMButton">午前のみプリセット</button>
-    <button id="presetPMButton">午後のみプリセット</button>
-    <button id="resetUIButton">入力をリセット</button>
-</div>
+    <div class="buttons">
+        <button id="startButton">開始</button>
+        <button id="stopButton">停止</button>
+        <button id="presetNormalButton">通常プリセット</button>
+        <button id="presetAMButton">午前のみプリセット</button>
+        <button id="presetPMButton">午後のみプリセット</button>
+        <button id="resetUIButton">入力をリセット</button>
+    </div>
 
-<div id="youtubePlayer"></div>
+    <div id="youtubePlayer"></div>
 
-<!-- YouTube IFrame Player APIを読み込み -->
-<script src="https://www.youtube.com/iframe_api"></script>
+    <!-- YouTube IFrame Player APIを読み込み -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // DOM要素のキャッシュ
-        const timeInputs = ['time1', 'time2', 'time3', 'time4'];
-        const statusElement = document.getElementById('status');
-        const youtubeUrlInput = document.getElementById('youtubeUrl');
-        const youtubePlayerContainer = document.getElementById('youtubePlayer');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM要素のキャッシュ
+            const timeInputs = ['time1', 'time2', 'time3', 'time4'];
+            const statusElement = document.getElementById('status');
+            const youtubeUrlInput = document.getElementById('youtubeUrl');
+            const youtubePlayerContainer = document.getElementById('youtubePlayer');
 
-        // ボタン要素の取得とイベントリスナーの設定
-        document.getElementById('startButton').addEventListener('click', StartButton);
-        document.getElementById('stopButton').addEventListener('click', ForceStopButton);
-        document.getElementById('presetNormalButton').addEventListener('click', presetNormalTime);
-        document.getElementById('presetAMButton').addEventListener('click', presetOnlyAMTime);
-        document.getElementById('presetPMButton').addEventListener('click', presetOnlyPMTime);
-        document.getElementById('resetUIButton').addEventListener('click', resetUI);
+            // ボタン要素の取得とイベントリスナーの設定
+            document.getElementById('startButton').addEventListener('click', StartButton);
+            document.getElementById('stopButton').addEventListener('click', ForceStopButton);
+            document.getElementById('presetNormalButton').addEventListener('click', presetNormalTime);
+            document.getElementById('presetAMButton').addEventListener('click', presetOnlyAMTime);
+            document.getElementById('presetPMButton').addEventListener('click', presetOnlyPMTime);
+            document.getElementById('resetUIButton').addEventListener('click', resetUI);
 
-        // スケジュールされたタイマーIDを保持
-        let scheduledTimeouts = [];
-        let audio = null; // 音声オブジェクトを保持
-        let audioPlaying = false; // 音声が再生中かどうか
-        let youtubePlayer = null; // YouTubeプレイヤーオブジェクト
-        let youtubePlaying = false; // YouTubeが再生中かどうか
+            // スケジュールされたタイマーIDを保持
+            let scheduledTimeouts = [];
+            let audio = null; // 音声オブジェクトを保持
+            let audioPlaying = false; // 音声が再生中かどうか
+            let youtubePlayer = null; // YouTubeプレイヤーオブジェクト
+            let youtubePlaying = false; // YouTubeが再生中かどうか
 
-        // 音声ファイルのリストを定義（HotarunohikariAudioフォルダ内）
-        const audioFiles = [
-            'HotarunohikariAudio/nomal.mp3',
-            // 必要に応じてファイルを追加
-        ];
+            // 音声ファイルのリストを定義（HotarunohikariAudioフォルダ内）
+            const audioFiles = [
+                'HotarunohikariAudio/nomal.mp3',
+                // 必要に応じてファイルを追加
+            ];
 
-        // ローカルストレージからYouTubeのURLを読み込む
-        const storedYoutubeUrl = localStorage.getItem('youtubeUrl');
-        if (storedYoutubeUrl) {
-            youtubeUrlInput.value = storedYoutubeUrl;
-        }
-
-        // YouTubeのURLが変更されたときにローカルストレージに保存
-        youtubeUrlInput.addEventListener('input', function() {
-            localStorage.setItem('youtubeUrl', youtubeUrlInput.value);
-        });
-
-        function StartButton() {
-            try {
-                stopAllOnTimeProcedures();
-                statusElement.innerText = 'ステータス: 作動中';
-
-                // getTimesの結果をチェックする
-                const success = getTimes();
-                if (!success) {
-                    throw new Error("時間の設定に問題があり、処理を続行できません。");
-                }
-
-                alert("AutoChimeSystemを開始しました。\n処理を続けるにはOKボタンを押してください。\n停止したい場合は停止ボタンを押してください。");
-            } catch (e) {
-                alert("エラーが発生しました: " + e.message + "\n時間もう一度設定し直してください。");
-                statusElement.innerText = 'ステータス: 停止中 (エラー)';
+            // ローカルストレージからYouTubeのURLを読み込む
+            const storedYoutubeUrl = localStorage.getItem('youtubeUrl');
+            if (storedYoutubeUrl) {
+                youtubeUrlInput.value = storedYoutubeUrl;
             }
-        }
 
+            // YouTubeのURLが変更されたときにローカルストレージに保存
+            youtubeUrlInput.addEventListener('input', function () {
+                localStorage.setItem('youtubeUrl', youtubeUrlInput.value);
+            });
 
-        function ForceStopButton() {
-            try {
-                // すべての処理を強制的に停止
-                stopAllOnTimeProcedures();
-                stopAudio();
-                resetVariables();
-                resetUI();
-                alert("AutoChimeSystemを停止しました。\n初期状態に戻します。");
+            function StartButton() {
+                try {
+                    stopAllOnTimeProcedures();
+                    statusElement.innerText = 'ステータス: 作動中';
 
-                // ページをリロードする
-                location.reload();
-            } catch (e) {
-                console.error("エラーが発生しました: ", e);
-            }
-        }
-
-
-        function resetVariables() {
-            try {
-                if (youtubePlayer && youtubePlaying) {
-                    youtubePlayer.stopVideo();
-                    youtubePlayer.destroy();
-                    youtubePlayer = null;
-                    youtubePlaying = false;
-                    console.log("YouTubeプレイヤーを停止・削除しました。");
-                }
-                scheduledTimeouts = [];
-                audio = null;
-                audioPlaying = false;
-            } catch (e) {
-                alert("変数のリセット中にエラーが発生しました: " + e.message);
-            }
-        }
-
-        function resetUI() {
-            try {
-                // 時間入力フィールドをクリア
-                timeInputs.forEach(id => {
-                    document.getElementById(id).value = '';
-                });
-                // YouTubeのURLフィールドはリセットしない
-                // youtubeUrlInput.value = '';
-                // ステータス表示をリセット
-                statusElement.innerText = 'ステータス: 停止中';
-                // YouTubeプレイヤーを削除
-                if (youtubePlayerContainer.firstChild) {
-                    youtubePlayerContainer.removeChild(youtubePlayerContainer.firstChild);
-                }
-            } catch (e) {
-                alert("UIのリセット中にエラーが発生しました: " + e.message);
-            }
-        }
-
-        function getTimes() {
-            try {
-                const now = new Date();
-                const timeArray = timeInputs.map((id, index) => {
-                    const timeInputElement = document.getElementById(id);
-                    const timeValue = timeInputElement.value;
-                    const timeId = timeInputElement.getAttribute('data-id');
-                    const labelText = timeInputElement.getAttribute('data-label');
-
-                    if (timeValue) {
-                        const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                        const timeParts = timeValue.split(":").map(Number);
-
-                        if (timeParts.length !== 2 || timeParts.some(isNaN)) {
-                            alert(`${labelText} の形式が正しくありません。`);
-                            throw new Error("Invalid time format");
-                        }
-
-                        date.setHours(timeParts[0], timeParts[1], 0, 0);
-
-                        if (date < now) {
-                            alert(`${labelText} は現在の時間よりも過去です。正しい時間を設定してください。`);
-                            throw new Error("Time is in the past");
-                        }
-
-                        return { date, id: timeId };
-                    } else {
-                        console.log(`${labelText}: 有効な時間が設定されていません`);
-                        return null;
+                    // getTimesの結果をチェックする
+                    const success = getTimes();
+                    if (!success) {
+                        throw new Error("時間の設定に問題があり、処理を続行できません。");
                     }
-                });
 
-                // エラーがなければタイマーをセット
-                setAlarm(timeArray);
-                return true; // 成功
-            } catch (e) {
-                console.error("getTimesエラー:", e.message);
-                alert("時間の取得中にエラーが発生しました: " + e.message);
-                return false; // 失敗
+                    alert("AutoChimeSystemを開始しました。\n処理を続けるにはOKボタンを押してください。\n停止したい場合は停止ボタンを押してください。");
+                } catch (e) {
+                    alert("エラーが発生しました: " + e.message + "\n時間もう一度設定し直してください。");
+                    statusElement.innerText = 'ステータス: 停止中 (エラー)';
+                }
             }
-        }
 
 
-        function setAlarm(timeArray) {
-            try {
-                timeArray.forEach((timeObj, index) => {
-                    if (timeObj) {
-                        const now = new Date();
-                        const { date: runAt, id: timeId } = timeObj;
-                        const timeInputElement = document.getElementById(timeInputs[index]);
+            function ForceStopButton() {
+                try {
+                    // すべての処理を強制的に停止
+                    stopAllOnTimeProcedures();
+                    stopAudio();
+                    resetVariables();
+                    resetUI();
+                    alert("AutoChimeSystemを停止しました。\n初期状態に戻します。");
+
+                    // ページをリロードする
+                    location.reload();
+                } catch (e) {
+                    console.error("エラーが発生しました: ", e);
+                }
+            }
+
+
+            function resetVariables() {
+                try {
+                    if (youtubePlayer && youtubePlaying) {
+                        youtubePlayer.stopVideo();
+                        youtubePlayer.destroy();
+                        youtubePlayer = null;
+                        youtubePlaying = false;
+                        console.log("YouTubeプレイヤーを停止・削除しました。");
+                    }
+                    scheduledTimeouts = [];
+                    audio = null;
+                    audioPlaying = false;
+                } catch (e) {
+                    alert("変数のリセット中にエラーが発生しました: " + e.message);
+                }
+            }
+
+            function resetUI() {
+                try {
+                    // 時間入力フィールドをクリア
+                    timeInputs.forEach(id => {
+                        document.getElementById(id).value = '';
+                    });
+                    // YouTubeのURLフィールドはリセットしない
+                    // youtubeUrlInput.value = '';
+                    // ステータス表示をリセット
+                    statusElement.innerText = 'ステータス: 停止中';
+                    // YouTubeプレイヤーを削除
+                    if (youtubePlayerContainer.firstChild) {
+                        youtubePlayerContainer.removeChild(youtubePlayerContainer.firstChild);
+                    }
+                } catch (e) {
+                    alert("UIのリセット中にエラーが発生しました: " + e.message);
+                }
+            }
+
+            function getTimes() {
+                try {
+                    const now = new Date();
+                    const timeArray = timeInputs.map((id, index) => {
+                        const timeInputElement = document.getElementById(id);
+                        const timeValue = timeInputElement.value;
+                        const timeId = timeInputElement.getAttribute('data-id');
                         const labelText = timeInputElement.getAttribute('data-label');
 
-                        if (runAt > now && runAt < new Date(9999, 11, 31)) {
-                            console.log(`${labelText} のアラームを設定: ${runAt.toLocaleTimeString()}, id: ${timeId}`);
-                            const delay = runAt - now;
-                            if (delay < 30 * 24 * 60 * 60 * 1000) { // 30日以内
-                                const timeoutId = setTimeout(() => nextProcess(timeId), delay);
+                        if (timeValue) {
+                            const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            const timeParts = timeValue.split(":").map(Number);
 
-                                // タイマーIDとアラーム時間を保持
-                                scheduledTimeouts.push({ timeoutId, alarmTime: runAt, timeId });
-                            } else {
-                                console.log(`エラー: ${labelText} はシステムの許容範囲を超えています。`);
+                            if (timeParts.length !== 2 || timeParts.some(isNaN)) {
+                                alert(`${labelText} の形式が正しくありません。`);
+                                throw new Error("Invalid time format");
                             }
+
+                            date.setHours(timeParts[0], timeParts[1], 0, 0);
+
+                            if (date < now) {
+                                alert(`${labelText} は現在の時間よりも過去です。正しい時間を設定してください。`);
+                                throw new Error("Time is in the past");
+                            }
+
+                            return { date, id: timeId };
                         } else {
-                            console.log(`${labelText} は過去または無効です: ${runAt.toLocaleTimeString()}`);
+                            console.log(`${labelText}: 有効な時間が設定されていません`);
+                            return null;
                         }
+                    });
+
+                    // エラーがなければタイマーをセット
+                    setAlarm(timeArray);
+                    return true; // 成功
+                } catch (e) {
+                    console.error("getTimesエラー:", e.message);
+                    alert("時間の取得中にエラーが発生しました: " + e.message);
+                    return false; // 失敗
+                }
+            }
+
+
+            function setAlarm(timeArray) {
+                try {
+                    timeArray.forEach((timeObj, index) => {
+                        if (timeObj) {
+                            const now = new Date();
+                            const { date: runAt, id: timeId } = timeObj;
+                            const timeInputElement = document.getElementById(timeInputs[index]);
+                            const labelText = timeInputElement.getAttribute('data-label');
+
+                            if (runAt > now && runAt < new Date(9999, 11, 31)) {
+                                console.log(`${labelText} のアラームを設定: ${runAt.toLocaleTimeString()}, id: ${timeId}`);
+                                const delay = runAt - now;
+                                if (delay < 30 * 24 * 60 * 60 * 1000) { // 30日以内
+                                    const timeoutId = setTimeout(() => nextProcess(timeId), delay);
+
+                                    // タイマーIDとアラーム時間を保持
+                                    scheduledTimeouts.push({ timeoutId, alarmTime: runAt, timeId });
+                                } else {
+                                    console.log(`エラー: ${labelText} はシステムの許容範囲を超えています。`);
+                                }
+                            } else {
+                                console.log(`${labelText} は過去または無効です: ${runAt.toLocaleTimeString()}`);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    alert("アラームの設定中にエラーが発生しました: " + e.message);
+                }
+            }
+
+            function nextProcess(timeId) {
+                try {
+                    // スケジュールされたタイムアウトを削除
+                    scheduledTimeouts = scheduledTimeouts.filter(item => item.timeId !== timeId);
+
+                    if (timeId.endsWith('end')) {
+                        // idに'end'がつくアラームの場合、再生を完全に停止
+                        stopAudio();
+                        console.log(`再生を停止しました（idが'end'で終了するアラーム）: ${timeId}`);
+
+                        // ステータスを更新
+                        if (timeId === 'resttime-end') {
+                            statusElement.innerText = 'ステータス: 休憩時間 再生終了';
+                        } else if (timeId === 'fireflylight-end') {
+                            statusElement.innerText = 'ステータス: 蛍の光 再生終了';
+                        } else {
+                            statusElement.innerText = 'ステータス: 再生停止';
+                        }
+
+                    } else if (timeId.includes('resttime')) {
+                        // idに'resttime'がつくアラームの場合、指定のURLの動画を埋め込み再生
+                        console.log(`YouTubeを埋め込み再生します（idに'resttime'が含まれるアラーム）: ${timeId}`);
+                        playYouTubeVideo();
+
+                        // ステータスを更新
+                        statusElement.innerText = 'ステータス: 休憩時間 再生開始処理中';
+
+                    } else if (timeId.includes('fireflylight')) {
+                        // idに'fireflylight'がつくアラームの場合、既存の処理を実行
+                        console.log(`既存の処理を実行します（idに'fireflylight'が含まれるアラーム）: ${timeId}`);
+                        playAudioUntilNextAlarm();
+
+                        // ステータスを更新
+                        statusElement.innerText = 'ステータス: 蛍の光 再生開始処理中';
                     }
-                });
-            } catch (e) {
-                alert("アラームの設定中にエラーが発生しました: " + e.message);
-            }
-        }
 
-    function nextProcess(timeId) {
-    try {
-        // スケジュールされたタイムアウトを削除
-        scheduledTimeouts = scheduledTimeouts.filter(item => item.timeId !== timeId);
+                    // すべての処理が終わったか確認
+                    if (scheduledTimeouts.length === 0) {
+                        console.log("すべての処理が完了しました。自動停止します。");
+                        // 自動停止処理を実行
+                        stopAudio();
+                        resetVariables();
+                        statusElement.innerText = 'ステータス: 停止中';
 
-        if (timeId.endsWith('end')) {
-            // idに'end'がつくアラームの場合、再生を完全に停止
-            stopAudio();
-            console.log(`再生を停止しました（idが'end'で終了するアラーム）: ${timeId}`);
-
-            // ステータスを更新
-            if (timeId === 'resttime-end') {
-                statusElement.innerText = 'ステータス: 休憩時間 再生終了';
-            } else if (timeId === 'fireflylight-end') {
-                statusElement.innerText = 'ステータス: 蛍の光 再生終了';
-            } else {
-                statusElement.innerText = 'ステータス: 再生停止';
-            }
-
-        } else if (timeId.includes('resttime')) {
-            // idに'resttime'がつくアラームの場合、指定のURLの動画を埋め込み再生
-            console.log(`YouTubeを埋め込み再生します（idに'resttime'が含まれるアラーム）: ${timeId}`);
-            playYouTubeVideo();
-
-            // ステータスを更新
-            statusElement.innerText = 'ステータス: 休憩時間 再生開始処理中';
-
-        } else if (timeId.includes('fireflylight')) {
-            // idに'fireflylight'がつくアラームの場合、既存の処理を実行
-            console.log(`既存の処理を実行します（idに'fireflylight'が含まれるアラーム）: ${timeId}`);
-            playAudioUntilNextAlarm();
-
-            // ステータスを更新
-            statusElement.innerText = 'ステータス: 蛍の光 再生開始処理中';
-        }
-
-        // すべての処理が終わったか確認
-        if (scheduledTimeouts.length === 0) {
-            console.log("すべての処理が完了しました。自動停止します。");
-            // 自動停止処理を実行
-            stopAudio();
-            resetVariables();
-            statusElement.innerText = 'ステータス: 停止中';
-
-            // 追加：アラートを表示し、ページをリロード
-            alert("すべての処理が完了しました。\n初期状態に戻ります。");
-            location.reload();
-        }
-
-    } catch (e) {
-        alert("次のプロセスの実行中にエラーが発生しました: " + e.message);
-    }
-    }
-
-
-        function playYouTubeVideo() {
-            try {
-                const url = youtubeUrlInput.value;
-                if (!url) {
-                    alert("再生するYouTubeのURLが入力されていません。");
-                    return;
-                }
-
-                const videoId = extractYouTubeVideoID(url);
-                if (!videoId) {
-                    alert("有効なYouTubeのURLを入力してください。");
-                    return;
-                }
-
-                if (youtubePlayer) {
-                    youtubePlayer.destroy();
-                }
-
-                // YouTubeプレイヤーを作成
-                youtubePlayer = new YT.Player('youtubePlayer', {
-                    height: '360',
-                    width: '640',
-                    videoId: videoId,
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
+                        // 追加：アラートを表示し、ページをリロード
+                        alert("すべての処理が完了しました。\n初期状態に戻ります。");
+                        location.reload();
                     }
-                });
-            } catch (e) {
-                alert("YouTube再生中にエラーが発生しました: " + e.message);
+
+                } catch (e) {
+                    alert("次のプロセスの実行中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function extractYouTubeVideoID(url) {
-            const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-            const match = url.match(regex);
-            return match ? match[1] : null;
-        }
 
-        function onPlayerReady(event) {
-            event.target.playVideo();
-            youtubePlaying = true;
-            console.log("YouTube動画の再生を開始しました。");
+            function playYouTubeVideo() {
+                try {
+                    const url = youtubeUrlInput.value;
+                    if (!url) {
+                        alert("再生するYouTubeのURLが入力されていません。");
+                        return;
+                    }
 
-            // ステータスを更新
-            statusElement.innerText = 'ステータス: 休憩時間 再生中';
-        }
+                    const videoId = extractYouTubeVideoID(url);
+                    if (!videoId) {
+                        alert("有効なYouTubeのURLを入力してください。");
+                        return;
+                    }
 
-        function onPlayerStateChange(event) {
-            if (event.data == YT.PlayerState.ENDED) {
-                youtubePlaying = false;
-                console.log("YouTube動画の再生が終了しました。");
+                    if (youtubePlayer) {
+                        youtubePlayer.destroy();
+                    }
+
+                    // YouTubeプレイヤーを作成
+                    youtubePlayer = new YT.Player('youtubePlayer', {
+                        height: '360',
+                        width: '640',
+                        videoId: videoId,
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                    console.log(`videoId = ${videoId} : youtubePlayer = ${youtubePlayer}`);
+                } catch (e) {
+                    alert("YouTube再生中にエラーが発生しました: " + e.message);
+                }
+            }
+
+            function extractYouTubeVideoID(url) {
+                const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                const match = url.match(regex);
+                return match ? match[1] : null;
+            }
+
+            function onPlayerReady(event) {
+                event.target.playVideo();
+                youtubePlaying = true;
+                console.log("YouTube動画の再生を開始しました。");
 
                 // ステータスを更新
-                statusElement.innerText = 'ステータス: 休憩時間 再生終了';
+                statusElement.innerText = 'ステータス: 休憩時間 再生中';
             }
-        }
 
-        function stopAudio() {
-            try {
-                if (audio && audioPlaying) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audioPlaying = false;
-                    console.log("音声再生を停止しました。");
-                }
-                if (youtubePlayer && youtubePlaying) {
-                    youtubePlayer.stopVideo();
-                    youtubePlayer.destroy();
-                    youtubePlayer = null;
+            function onPlayerStateChange(event) {
+                if (event.data == YT.PlayerState.ENDED) {
                     youtubePlaying = false;
-                    console.log("YouTubeプレイヤーを停止・削除しました。");
-                }
-
-                // ステータスを更新
-                statusElement.innerText = 'ステータス: 再生停止';
-            } catch (e) {
-                alert("音声停止中にエラーが発生しました: " + e.message);
-            }
-        }
-
-        function playAudioUntilNextAlarm() {
-            try {
-                // 音声が再生中の場合は停止
-                if (audioPlaying) {
-                    stopAudio();
-                }
-
-                // 音声ファイルをランダムに選択
-                const randomAudioFile = audioFiles[Math.floor(Math.random() * audioFiles.length)];
-
-                // 音声ファイルのパスを指定
-                audio = new Audio(randomAudioFile);
-                audio.loop = true;
-
-                // ユーザー操作が必要な場合のエラーハンドリング
-                audio.play().then(() => {
-                    audioPlaying = true;
-                    console.log("音声再生を開始しました。");
+                    console.log("YouTube動画の再生が終了しました。");
 
                     // ステータスを更新
-                    statusElement.innerText = 'ステータス: 蛍の光 再生中';
+                    statusElement.innerText = 'ステータス: 休憩時間 再生終了';
+                }
+            }
 
-                    // 次のアラーム時間を取得
-                    const nextAlarmTime = getNextAlarmTime();
-                    if (nextAlarmTime) {
-                        const now = new Date();
-                        const delay = nextAlarmTime - now;
-
-                        // 次のアラーム時間に音声再生を停止
-                        setTimeout(stopAudio, delay);
-                    } else {
-                        // 次のアラームがない場合は音声を再生し続ける
-                        console.log("次のアラームが設定されていません。音声は手動で停止する必要があります。");
+            function stopAudio() {
+                try {
+                    if (audio && audioPlaying) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audioPlaying = false;
+                        console.log("音声再生を停止しました。");
                     }
-                }).catch((error) => {
-                    console.error("音声の再生に失敗しました:", error);
-                    alert("音声を再生するためには、ユーザー操作が必要です。開始ボタンを再度クリックしてください。");
-                });
-            } catch (e) {
-                alert("音声再生中にエラーが発生しました: " + e.message);
+                    if (youtubePlayer && youtubePlaying) {
+                        youtubePlayer.stopVideo();
+                        youtubePlayer.destroy();
+                        youtubePlayer = null;
+                        youtubePlaying = false;
+                        console.log("YouTubeプレイヤーを停止・削除しました。");
+                    }
+
+                    // ステータスを更新
+                    statusElement.innerText = 'ステータス: 再生停止';
+                } catch (e) {
+                    alert("音声停止中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function getNextAlarmTime() {
-            try {
-                const now = new Date();
-                const futureAlarms = scheduledTimeouts
-                    .map(({ alarmTime }) => alarmTime)
-                    .filter(alarmTime => alarmTime > now);
+            function playAudioUntilNextAlarm() {
+                try {
+                    // 音声が再生中の場合は停止
+                    if (audioPlaying) {
+                        stopAudio();
+                    }
 
-                return futureAlarms.length > 0 ? new Date(Math.min(...futureAlarms)) : null;
-            } catch (e) {
-                alert("次のアラーム時間の取得中にエラーが発生しました: " + e.message);
+                    // 音声ファイルをランダムに選択
+                    const randomAudioFile = audioFiles[Math.floor(Math.random() * audioFiles.length)];
+
+                    // 音声ファイルのパスを指定
+                    audio = new Audio(randomAudioFile);
+                    audio.loop = true;
+
+                    // ユーザー操作が必要な場合のエラーハンドリング
+                    audio.play().then(() => {
+                        audioPlaying = true;
+                        console.log("音声再生を開始しました。");
+
+                        // ステータスを更新
+                        statusElement.innerText = 'ステータス: 蛍の光 再生中';
+
+                        // 次のアラーム時間を取得
+                        const nextAlarmTime = getNextAlarmTime();
+                        if (nextAlarmTime) {
+                            const now = new Date();
+                            const delay = nextAlarmTime - now;
+
+                            // 次のアラーム時間に音声再生を停止
+                            setTimeout(stopAudio, delay);
+                        } else {
+                            // 次のアラームがない場合は音声を再生し続ける
+                            console.log("次のアラームが設定されていません。音声は手動で停止する必要があります。");
+                        }
+                    }).catch((error) => {
+                        console.error("音声の再生に失敗しました:", error);
+                        alert("音声を再生するためには、ユーザー操作が必要です。開始ボタンを再度クリックしてください。");
+                    });
+                } catch (e) {
+                    alert("音声再生中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function presetNormalTime() {
-            try {
-                resetAll(); // 初期化処理を追加
-                setPresetTimes(["12:00", "12:55", "15:50", "15:59"]);
-            } catch (e) {
-                alert("通常プリセットの設定中にエラーが発生しました: " + e.message);
+            function getNextAlarmTime() {
+                try {
+                    const now = new Date();
+                    const futureAlarms = scheduledTimeouts
+                        .map(({ alarmTime }) => alarmTime)
+                        .filter(alarmTime => alarmTime > now);
+
+                    return futureAlarms.length > 0 ? new Date(Math.min(...futureAlarms)) : null;
+                } catch (e) {
+                    alert("次のアラーム時間の取得中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function presetOnlyAMTime() {
-            try {
-                resetAll(); // 初期化処理を追加
-                setPresetTimes(["", "", "12:20", "12:29"]);
-            } catch (e) {
-                alert("午前のみプリセットの設定中にエラーが発生しました: " + e.message);
+            function presetNormalTime() {
+                try {
+                    resetAll(); // 初期化処理を追加
+                    setPresetTimes(["12:00", "12:55", "15:50", "15:59"]);
+                } catch (e) {
+                    alert("通常プリセットの設定中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function presetOnlyPMTime() {
-            try {
-                resetAll(); // 初期化処理を追加
-                setPresetTimes(["", "", "15:50", "15:59"]);
-            } catch (e) {
-                alert("午後のみプリセットの設定中にエラーが発生しました: " + e.message);
+            function presetOnlyAMTime() {
+                try {
+                    resetAll(); // 初期化処理を追加
+                    setPresetTimes(["", "", "12:20", "12:29"]);
+                } catch (e) {
+                    alert("午前のみプリセットの設定中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function resetAll() {
-            try {
-                stopAllOnTimeProcedures();
-                stopAudio();
-                resetVariables();
-                // ステータス表示をリセット
-                statusElement.innerText = 'ステータス: 停止中';
-            } catch (e) {
-                alert("リセット中にエラーが発生しました: " + e.message);
+            function presetOnlyPMTime() {
+                try {
+                    resetAll(); // 初期化処理を追加
+                    setPresetTimes(["", "", "15:50", "15:59"]);
+                } catch (e) {
+                    alert("午後のみプリセットの設定中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function setPresetTimes(times) {
-            try {
-                times.forEach((time, index) => {
-                    document.getElementById(timeInputs[index]).value = time;
-                });
-            } catch (e) {
-                alert("プリセット時間の設定中にエラーが発生しました: " + e.message);
+            function resetAll() {
+                try {
+                    stopAllOnTimeProcedures();
+                    stopAudio();
+                    resetVariables();
+                    // ステータス表示をリセット
+                    statusElement.innerText = 'ステータス: 停止中';
+                } catch (e) {
+                    alert("リセット中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        function stopAllOnTimeProcedures() {
-            try {
-                scheduledTimeouts.forEach(({ timeoutId }) => clearTimeout(timeoutId));
-                scheduledTimeouts = [];
-            } catch (e) {
-                alert("タイマーの停止中にエラーが発生しました: " + e.message);
+            function setPresetTimes(times) {
+                try {
+                    times.forEach((time, index) => {
+                        document.getElementById(timeInputs[index]).value = time;
+                    });
+                } catch (e) {
+                    alert("プリセット時間の設定中にエラーが発生しました: " + e.message);
+                }
             }
-        }
 
-        // YouTube IFrame Player APIの準備完了時に呼び出される関数
-        window.onYouTubeIframeAPIReady = function() {
-            console.log("YouTube IFrame Player APIが準備できました。");
-        }
+            function stopAllOnTimeProcedures() {
+                try {
+                    scheduledTimeouts.forEach(({ timeoutId }) => clearTimeout(timeoutId));
+                    scheduledTimeouts = [];
+                } catch (e) {
+                    alert("タイマーの停止中にエラーが発生しました: " + e.message);
+                }
+            }
 
-    });
-</script>
+            // YouTube IFrame Player APIの準備完了時に呼び出される関数
+            window.onYouTubeIframeAPIReady = function () {
+                console.log("YouTube IFrame Player APIが準備できました。");
+            }
+
+        });
+    </script>
 
 </body>
+
 </html>
