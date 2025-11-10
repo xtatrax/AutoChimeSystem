@@ -6,6 +6,8 @@ import os
 PORT = 8000
 Handler = http.server.SimpleHTTPRequestHandler
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 if "darwin" in sys.platform :
     print("OS is macOS")
     os.system("open http://localhost:%d" % PORT)
@@ -18,6 +20,3 @@ else:
 with socketserver.TCPServer(("", PORT), Handler) as httpd:
     print("serving at port", PORT)
     httpd.serve_forever()
-
-
-
